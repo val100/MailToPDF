@@ -1,0 +1,123 @@
+spring:
+  application:
+    name: email-to-pdf-converter
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:emailpdf}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+    driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:create-drop}
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: ${JPA_DIALECT:org.hibernate.dialect.H2Dialect}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWT_JWK_SET_URI:https://login.microsoftonline.com/common/discovery/v2.0/keys}
+
+# Microsoft Graph Configuration
+microsoft:
+  graph:
+    client-id: ${MICROSOFT_CLIENT_ID:}
+    client-secret: ${MICROSOFT_CLIENT_SECRET:}
+    tenant-id: ${MICROSOFT_TENANT_ID:}
+    
+# Application Configuration
+application:
+  pdf:
+    storage-path: ${PDF_STORAGE_PATH:/tmp/pdfs}
+    max-file-size-mb: ${PDF_MAX_FILE_SIZE_MB:50}
+    filename-template: "{to_email}.{from_email}.{date}.{time}.{emailID@account.company.com}.pdf"
+    create-directories: ${PDF_CREATE_DIRECTORIES:true}
+    overwrite-existing: ${PDF_OVERWRITE_EXISTING:false}
+  
+  scheduling:
+    thread-pool-size: ${SCHEDULING_THREAD_POOL_SIZE:10}
+    task-timeout-minutes: ${SCHEDULING_TASK_TIMEOUT_MINUTES:30}
+    health-check-interval-minutes: ${SCHEDULING_HEALTH_CHECK_INTERVAL_MINUTES:5}
+    enable-auto-cleanup: ${SCHEDULING_ENABLE_AUTO_CLEANUP:true}
+    stale-task-cleanup-hours: ${SCHEDULING_STALE_TASK_CLEANUP_HOURS:2}
+  
+  processing:
+    default-max-emails-per-run: ${PROCESSING_DEFAULT_MAX_EMAILS:50}
+    default-date-range-days: ${PROCESSING_DEFAULT_DATE_RANGE_DAYS:7}
+    default-include-attachments: ${PROCESSING_DEFAULT_INCLUDE_ATTACHMENTS:true}
+    default-combine-attachments-in-pdf: ${PROCESSING_DEFAULT_COMBINE_ATTACHMENTS:true}
+    max-concurrent-tasks: ${PROCESSING_MAX_CONCURRENT_TASKS:5}
+    max-attachment-size-mb: ${PROCESSING_MAX_ATTACHMENT_SIZE_MB:25}
+
+# Server Configuration
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:/}
+
+# Logging Configuration
+logging:
+  level:
+    com.company.emailpdf: ${LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
+    root: ${LOG_LEVEL_ROOT:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: ${LOG_FILE_NAME:logs/email-pdf-converter.log}
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.company.emailpdf: DEBUG
+    org.springframework.security: DEBUG
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    com.company.emailpdf: INFO
+    org.springframework.security: WARN
+    root: WARN

@@ -1,0 +1,81 @@
+package com.company.emailpdf.service;
+
+import com.company.emailpdf.dto.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+
+@Service
+public class TaskExecutionService {
+    
+    private static final Logger log = LoggerFactory.getLogger(TaskExecutionService.class);
+    
+    private final MailboxLockingService lockingService;
+    private final EmailProcessingOrchestrator emailProcessor;
+    
+    public TaskExecutionService(MailboxLockingService lockingService, EmailProcessingOrchestrator emailProcessor) {
+        this.lockingService = lockingService;
+        this.emailProcessor = emailProcessor;
+    }
+    
+    /**
+     * Execute processing task for mailbox (thread-safe, one task per mailbox)
+     * This is a simplified implementation for demonstration
+     */
+    public CompletableFuture<ProcessingResult> executeProcessingTask(String mailboxId, ProcessingRequest request) {
+        log.info("Executing processing task for mailbox: {}", mailboxId);
+        
+        // Try to acquire lock
+        if (!lockingService.tryAcquireLock(mailboxId)) {
+            throw new com.company.emailpdf.exception.MailboxLockException("Cannot acquire lock for mailbox: " + mailboxId);
+        }
+        
+        try {
+            // Execute the processing
+            return emailProcessor.processMailboxEmails(mailboxId, "job-" + System.currentTimeMillis(), request.getSettings())
+                .whenComplete((result, throwable) -> {
+                    // Always release the lock
+                    lockingService.releaseLock(mailboxId);
+                });
+        } catch (Exception e) {
+            // Release lock on error
+            lockingService.releaseLock(mailboxId);
+            throw e;
+        }
+    }
+    
+    /**
+     * Get task status for mailbox
+     */
+    public Optional<TaskExecutionStatus> getTaskStatus(String mailboxId) {
+        Optional<MailboxLockingService.ExecutionContext> context = lockingService.getExecutionContext(mailboxId);
+        
+        if (context.isPresent()) {
+            return Optional.of(TaskExecutionStatus.builder()
+                .mailboxId(mailboxId)
+                .status("RUNNING")
+                .startTime(context.get().getStartTime())
+                .duration(context.get().getExecutionDuration())
+                .threadName(context.get().getThreadName())
+                .cancelled(false)
+                .build());
+        }
+        
+        return Optional.empty();
+    }
+    
+    /**
+     * Cancel task for mailbox
+     */
+    public boolean cancelTask(String mailboxId) {
+        if (lockingService.isMailboxLocked(mailboxId)) {
+            lockingService.forceReleaseLock(mailboxId);
+            log.info("Cancelled task for mailbox: {}", mailboxId);
+            return true;
+        }
+        return false;
+    }
+}
