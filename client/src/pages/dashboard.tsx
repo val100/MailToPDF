@@ -22,6 +22,15 @@ interface ProcessingJob {
   failedCount: number;
 }
 
+interface ConnectionStatus {
+  connected: boolean;
+  error?: string;
+  user?: {
+    displayName: string;
+    email: string;
+  };
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -34,13 +43,13 @@ export default function Dashboard() {
   });
 
   // Fetch recent activity
-  const { data: activities = [] } = useQuery({
+  const { data: activities = [] } = useQuery<any[]>({
     queryKey: ['/api/activity'],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
   // Fetch recent files
-  const { data: recentFiles = [] } = useQuery({
+  const { data: recentFiles = [] } = useQuery<any[]>({
     queryKey: ['/api/files/recent'],
     refetchInterval: 10000,
   });
@@ -53,7 +62,7 @@ export default function Dashboard() {
   });
 
   // Check Office 365 connection
-  const { data: connectionStatus } = useQuery({
+  const { data: connectionStatus } = useQuery<ConnectionStatus>({
     queryKey: ['/api/office365/test'],
     refetchInterval: 60000, // Check every minute
   });
