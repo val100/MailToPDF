@@ -1,0 +1,11 @@
+com/company/emailpdf/service/MailboxLockingServiceTest.class
+com/company/emailpdf/service/EmailProcessingOrchestratorTest.class
+com/company/emailpdf/integration/EmailPdfApplicationIntegrationTest.class
+com/company/emailpdf/integration/EndToEndWorkflowTest.class
+com/company/emailpdf/domain/MailboxScheduleTest.class
+com/company/emailpdf/service/MailboxLockingServiceNegativeTest.class
+com/company/emailpdf/controller/SimpleControllerTest.class
+com/company/emailpdf/service/FileNamingServiceTest.class
+com/company/emailpdf/service/FileNamingServiceNegativeTest.class
+com/company/emailpdf/domain/MailboxScheduleNegativeTest.class
+com/company/emailpdf/repository/MailboxScheduleRepositoryTest.class

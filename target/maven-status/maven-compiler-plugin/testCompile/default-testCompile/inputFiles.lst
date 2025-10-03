@@ -1,0 +1,11 @@
+/home/runner/workspace/src/test/java/com/company/emailpdf/controller/SimpleControllerTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/integration/EmailPdfApplicationIntegrationTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/service/MailboxLockingServiceNegativeTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/domain/MailboxScheduleNegativeTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/domain/MailboxScheduleTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/service/MailboxLockingServiceTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/service/FileNamingServiceNegativeTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/integration/EndToEndWorkflowTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/service/EmailProcessingOrchestratorTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/repository/MailboxScheduleRepositoryTest.java
+/home/runner/workspace/src/test/java/com/company/emailpdf/service/FileNamingServiceTest.java
