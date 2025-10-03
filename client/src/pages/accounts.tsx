@@ -17,20 +17,7 @@ import {
   Plus, Mail, Clock, Settings2, Trash2, Edit, CheckCircle2, XCircle,
   Calendar, Timer, PlayCircle, Loader2
 } from "lucide-react";
-
-interface EmailAccount {
-  id: string;
-  name: string;
-  emailAddress: string;
-  accountType: string;
-  isActive: boolean;
-  checkingMode: string;
-  intervalMinutes: number;
-  dailyTime?: string;
-  lastChecked?: string;
-  lastCheckStatus?: string;
-  createdAt: string;
-}
+import type { EmailAccount, InsertEmailAccount } from "@shared/schema";
 
 interface AccountFormData {
   name: string;
@@ -68,7 +55,7 @@ export default function Accounts() {
 
   // Add account mutation
   const addAccountMutation = useMutation({
-    mutationFn: async (data: AccountFormData) => {
+    mutationFn: async (data: InsertEmailAccount) => {
       return await apiRequest('POST', '/api/accounts', data);
     },
     onSuccess: () => {
@@ -91,7 +78,7 @@ export default function Accounts() {
 
   // Update account mutation
   const updateAccountMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<AccountFormData> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertEmailAccount> }) => {
       return await apiRequest('PATCH', `/api/accounts/${id}`, data);
     },
     onSuccess: () => {
@@ -154,9 +141,24 @@ export default function Accounts() {
 
   const onSubmit = (data: AccountFormData) => {
     if (editingAccount) {
-      updateAccountMutation.mutate({ id: editingAccount.id, data });
+      // For updates, only send the fields that changed
+      const updatePayload: Partial<InsertEmailAccount> = {
+        name: data.name,
+        emailAddress: data.emailAddress,
+        accountType: data.accountType,
+        checkingMode: data.checkingMode,
+        intervalMinutes: data.intervalMinutes,
+        dailyTime: data.dailyTime,
+        isActive: data.isActive,
+      };
+      updateAccountMutation.mutate({ id: editingAccount.id, data: updatePayload });
     } else {
-      addAccountMutation.mutate(data);
+      // For new accounts, include all required fields
+      const createPayload: InsertEmailAccount = {
+        ...data,
+        userId: 'default-user', // TODO: Get from auth context
+      };
+      addAccountMutation.mutate(createPayload);
     }
   };
 

@@ -19,15 +19,11 @@ import {
   Plus, Trash2, Edit, CheckCircle2, XCircle, Loader2, GitBranch,
   Filter, Zap, Copy, AlertCircle, Settings2, PlayCircle
 } from "lucide-react";
+import type { Scenario, InsertScenario } from "@shared/schema";
 
-interface Scenario {
-  id: string;
-  name: string;
-  description: string;
-  isActive: boolean;
+interface ScenarioWithCounts extends Omit<Scenario, 'actions'> {
   conditionsCount: number;
   actionsCount: number;
-  createdAt: string;
 }
 
 interface ScenarioCondition {
@@ -49,7 +45,7 @@ export default function Scenarios() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
+  const [editingScenario, setEditingScenario] = useState<ScenarioWithCounts | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
 
   const { register, handleSubmit, watch, setValue, reset } = useForm<ScenarioFormData>({
@@ -61,7 +57,7 @@ export default function Scenarios() {
   });
 
   // Fetch scenarios
-  const { data: scenarios = [], isLoading } = useQuery<Scenario[]>({
+  const { data: scenarios = [], isLoading } = useQuery<ScenarioWithCounts[]>({
     queryKey: ['/api/scenarios'],
     refetchInterval: 30000,
   });
@@ -74,7 +70,7 @@ export default function Scenarios() {
 
   // Add scenario mutation
   const addScenarioMutation = useMutation({
-    mutationFn: async (data: ScenarioFormData) => {
+    mutationFn: async (data: InsertScenario) => {
       return await apiRequest('POST', '/api/scenarios', data);
     },
     onSuccess: () => {
@@ -97,7 +93,7 @@ export default function Scenarios() {
 
   // Update scenario mutation
   const updateScenarioMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<ScenarioFormData> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertScenario> }) => {
       return await apiRequest('PATCH', `/api/scenarios/${id}`, data);
     },
     onSuccess: () => {
@@ -162,16 +158,28 @@ export default function Scenarios() {
 
   const onSubmit = (data: ScenarioFormData) => {
     if (editingScenario) {
-      updateScenarioMutation.mutate({ id: editingScenario.id, data });
+      // For updates, only send the fields that changed (don't overwrite actions)
+      const updatePayload: Partial<InsertScenario> = {
+        name: data.name,
+        description: data.description,
+        isActive: data.isActive,
+      };
+      updateScenarioMutation.mutate({ id: editingScenario.id, data: updatePayload });
     } else {
-      addScenarioMutation.mutate(data);
+      // For new scenarios, include all required fields
+      const createPayload: InsertScenario = {
+        ...data,
+        actions: [], // Default empty actions array (will be configured later)
+        userId: 'default-user', // TODO: Get from auth context
+      };
+      addScenarioMutation.mutate(createPayload);
     }
   };
 
-  const handleEdit = (scenario: Scenario) => {
+  const handleEdit = (scenario: ScenarioWithCounts) => {
     setEditingScenario(scenario);
     setValue('name', scenario.name);
-    setValue('description', scenario.description);
+    setValue('description', scenario.description || '');
     setValue('isActive', scenario.isActive);
     setIsAddDialogOpen(true);
   };
