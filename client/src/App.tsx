@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar } from "@/components/sidebar";
 import Dashboard from "@/pages/dashboard";
+import Accounts from "@/pages/accounts";
 import EmailProcessing from "@/pages/email-processing";
 import PdfFiles from "@/pages/pdf-files";
 import Settings from "@/pages/settings";
@@ -14,6 +15,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/accounts" component={Accounts} />
       <Route path="/email-processing" component={EmailProcessing} />
       <Route path="/pdf-files" component={PdfFiles} />
       <Route path="/settings" component={Settings} />

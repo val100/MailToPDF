@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: "fa-tachometer-alt" },
+  { name: "Accounts", href: "/accounts", icon: "fa-user-circle" },
+  { name: "Scenarios", href: "/scenarios", icon: "fa-sitemap" },
   { name: "Email Processing", href: "/email-processing", icon: "fa-envelope" },
   { name: "PDF Files", href: "/pdf-files", icon: "fa-folder" },
   { name: "Settings", href: "/settings", icon: "fa-cog" },
-  { name: "Reports", href: "/reports", icon: "fa-chart-line" },
-  { name: "Error Logs", href: "/error-logs", icon: "fa-exclamation-triangle" },
 ];
 
 interface SidebarProps {
