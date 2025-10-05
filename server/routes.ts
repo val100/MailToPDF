@@ -5,6 +5,13 @@ import { microsoftGraphService } from "./services/microsoftGraph";
 import { pdfGeneratorService } from "./services/pdfGenerator";
 import { fileManagerService } from "./services/fileManager";
 import { z } from "zod";
+import { 
+  insertEmailAccountSchema, 
+  insertScenarioSchema 
+} from "@shared/schema";
+
+const updateEmailAccountSchema = insertEmailAccountSchema.partial().omit({ userId: true });
+const updateScenarioSchema = insertScenarioSchema.partial().omit({ userId: true });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -163,6 +170,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connected: false, 
         error: 'Failed to connect to Office 365' 
       });
+    }
+  });
+
+  // Email Account routes
+  app.get("/api/accounts", async (req, res) => {
+    try {
+      const userId = 'default-user';
+      const accounts = await storage.getEmailAccountsByUser(userId);
+      res.json(accounts);
+    } catch (error) {
+      console.error('Get accounts error:', error);
+      res.status(500).json({ error: 'Failed to fetch email accounts' });
+    }
+  });
+
+  app.get("/api/accounts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const account = await storage.getEmailAccount(id);
+      
+      if (!account) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+      
+      res.json(account);
+    } catch (error) {
+      console.error('Get account error:', error);
+      res.status(500).json({ error: 'Failed to fetch email account' });
+    }
+  });
+
+  app.post("/api/accounts", async (req, res) => {
+    try {
+      const userId = 'default-user';
+      const validatedData = insertEmailAccountSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      const account = await storage.createEmailAccount(validatedData);
+      
+      await storage.createActivityLog({
+        userId,
+        type: 'success',
+        message: `Created email account: ${account.name}`,
+        metadata: { accountId: account.id, emailAddress: account.emailAddress }
+      });
+      
+      res.status(201).json(account);
+    } catch (error) {
+      console.error('Create account error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to create email account' });
+    }
+  });
+
+  app.patch("/api/accounts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = 'default-user';
+      
+      const existingAccount = await storage.getEmailAccount(id);
+      if (!existingAccount) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+      
+      if (existingAccount.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized to update this account' });
+      }
+      
+      const validatedData = updateEmailAccountSchema.parse(req.body);
+      const account = await storage.updateEmailAccount(id, validatedData);
+      
+      if (!account) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+      
+      await storage.createActivityLog({
+        userId,
+        type: 'info',
+        message: `Updated email account: ${account.name}`,
+        metadata: { accountId: account.id }
+      });
+      
+      res.json(account);
+    } catch (error) {
+      console.error('Update account error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to update email account' });
+    }
+  });
+
+  app.delete("/api/accounts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = 'default-user';
+      
+      const account = await storage.getEmailAccount(id);
+      if (!account) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+      
+      const deleted = await storage.deleteEmailAccount(id);
+      
+      if (deleted) {
+        await storage.createActivityLog({
+          userId,
+          type: 'info',
+          message: `Deleted email account: ${account.name}`,
+          metadata: { accountId: id }
+        });
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ error: 'Failed to delete account' });
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      res.status(500).json({ error: 'Failed to delete email account' });
+    }
+  });
+
+  // Scenario routes
+  app.get("/api/scenarios", async (req, res) => {
+    try {
+      const userId = 'default-user';
+      const scenarios = await storage.getScenariosByUser(userId);
+      res.json(scenarios);
+    } catch (error) {
+      console.error('Get scenarios error:', error);
+      res.status(500).json({ error: 'Failed to fetch scenarios' });
+    }
+  });
+
+  app.get("/api/scenarios/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const scenario = await storage.getScenario(id);
+      
+      if (!scenario) {
+        return res.status(404).json({ error: 'Scenario not found' });
+      }
+      
+      res.json(scenario);
+    } catch (error) {
+      console.error('Get scenario error:', error);
+      res.status(500).json({ error: 'Failed to fetch scenario' });
+    }
+  });
+
+  app.post("/api/scenarios", async (req, res) => {
+    try {
+      const userId = 'default-user';
+      const validatedData = insertScenarioSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      const scenario = await storage.createScenario(validatedData);
+      
+      await storage.createActivityLog({
+        userId,
+        type: 'success',
+        message: `Created scenario: ${scenario.name}`,
+        metadata: { scenarioId: scenario.id }
+      });
+      
+      res.status(201).json(scenario);
+    } catch (error) {
+      console.error('Create scenario error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to create scenario' });
+    }
+  });
+
+  app.patch("/api/scenarios/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = 'default-user';
+      
+      const existingScenario = await storage.getScenario(id);
+      if (!existingScenario) {
+        return res.status(404).json({ error: 'Scenario not found' });
+      }
+      
+      if (existingScenario.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized to update this scenario' });
+      }
+      
+      const validatedData = updateScenarioSchema.parse(req.body);
+      const scenario = await storage.updateScenario(id, validatedData);
+      
+      if (!scenario) {
+        return res.status(404).json({ error: 'Scenario not found' });
+      }
+      
+      await storage.createActivityLog({
+        userId,
+        type: 'info',
+        message: `Updated scenario: ${scenario.name}`,
+        metadata: { scenarioId: scenario.id }
+      });
+      
+      res.json(scenario);
+    } catch (error) {
+      console.error('Update scenario error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to update scenario' });
+    }
+  });
+
+  app.delete("/api/scenarios/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = 'default-user';
+      
+      const scenario = await storage.getScenario(id);
+      if (!scenario) {
+        return res.status(404).json({ error: 'Scenario not found' });
+      }
+      
+      const deleted = await storage.deleteScenario(id);
+      
+      if (deleted) {
+        await storage.createActivityLog({
+          userId,
+          type: 'info',
+          message: `Deleted scenario: ${scenario.name}`,
+          metadata: { scenarioId: id }
+        });
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ error: 'Failed to delete scenario' });
+      }
+    } catch (error) {
+      console.error('Delete scenario error:', error);
+      res.status(500).json({ error: 'Failed to delete scenario' });
     }
   });
 
